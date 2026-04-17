@@ -29,7 +29,10 @@
             <div class="avatar-circle">U</div>
             <span>用户 1</span>
           </div>
-          <button @click="openWaimaoTools" class="tools-btn" title="外贸工具集合">🛠️</button>
+          <div class="user-tools">
+            <button @click="openYuque" class="tools-btn" title="语雀笔记">📝</button>
+            <button @click="openWaimaoTools" class="tools-btn" title="外贸工具集合">🛠️</button>
+          </div>
         </div>
       </div>
     </aside>
@@ -131,11 +134,25 @@
                 <p>了解指定城市的实时天气</p>
               </div>
             </div>
+            <div class="action-card" @click="message = '搜索最新的 AI 技术趋势'; handleSend()">
+              <span class="action-icon">🌐</span>
+              <div class="action-text">
+                <b>互联网搜索</b>
+                <p>利用插件搜索最新实时信息</p>
+              </div>
+            </div>
+            <div class="action-card" @click="message = '维基百科查询量子力学的基础概念'; handleSend()">
+              <span class="action-icon">📖</span>
+              <div class="action-text">
+                <b>百科全书</b>
+                <p>深入查询维基百科详细条目</p>
+              </div>
+            </div>
             <div class="action-card" @click="message = '解释一下什么是 RAG？'; handleSend()">
               <span class="action-icon">📚</span>
               <div class="action-text">
-                <b>知识库问答</b>
-                <p>检索内部 RAG 知识文档</p>
+                <b>知识库检索</b>
+                <p>基于 RAG 技术查询内部文档</p>
               </div>
             </div>
             <div class="action-card" @click="message = '现在几点了？'; handleSend()">
@@ -316,6 +333,12 @@ function openCommunityPrompts() {
 function openWaimaoTools() {
   if (confirm("是否打开外贸百科工具集合网站？")) {
     window.open("https://waimao21.com/", "_blank");
+  }
+}
+
+function openYuque() {
+  if (confirm("是否打开语雀个人工作台？")) {
+    window.open("https://www.yuque.com/dashboard/notes", "_blank");
   }
 }
 
@@ -636,6 +659,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.user-tools {
+  display: flex;
+  gap: 4px;
 }
 
 .tools-btn {
