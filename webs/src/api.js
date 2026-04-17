@@ -14,3 +14,23 @@ export function chat(data) {
 export async function getModelsConfig() {
   return instance.get("/config");
 }
+
+export function getUserProfile(userId) {
+  return instance.get("/profile", { params: { userId } });
+}
+
+export function saveUserProfile(data) {
+  return instance.post("/profile", data);
+}
+
+export function getSessions(userId) {
+  return instance.get("/sessions", { params: { userId } });
+}
+
+export function getSessionMessages(sessionId) {
+  return instance.get("/messages", { params: { sessionId } });
+}
+
+export function deleteSessionApi(sessionId) {
+  return instance.delete("/session", { params: { sessionId } });
+}

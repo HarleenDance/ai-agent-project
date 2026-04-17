@@ -32,10 +32,48 @@
           <div class="user-tools">
             <button @click="openYuque" class="tools-btn" title="语雀笔记">📝</button>
             <button @click="openWaimaoTools" class="tools-btn" title="外贸工具集合">🛠️</button>
+            <button @click="showUserSettings = true" class="tools-btn" title="个人设置">⚙️</button>
           </div>
         </div>
       </div>
     </aside>
+
+    <!-- Settings Overlay -->
+    <transition name="fade">
+      <div v-if="showUserSettings" class="prompt-library-overlay" @click.self="showUserSettings = false">
+        <div class="prompt-library-modal settings-modal">
+          <div class="modal-header">
+            <h3>个人设置与偏好</h3>
+            <button @click="showUserSettings = false" class="close-modal">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="settings-group">
+              <label>您的称呼</label>
+              <input v-model="userProfile.name" type="text" placeholder="例如：小明">
+            </div>
+            <div class="settings-group">
+              <label>职业/角色</label>
+              <input v-model="userProfile.job" type="text" placeholder="例如：高级架构师、学生">
+            </div>
+            <div class="settings-group">
+              <label>AI 回复风格偏好</label>
+              <select v-model="userProfile.preference">
+                <option value="简洁专业">简洁专业 (默认)</option>
+                <option value="幽默风趣">幽默风趣</option>
+                <option value="详细严谨">详细严谨</option>
+                <option value="创意发散">创意发散</option>
+              </select>
+            </div>
+            <div class="settings-info">
+              💡 设置后的偏好将直接影响 AI 的回复语气和专业深度。
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button @click="saveSettings" class="save-btn">保存并应用</button>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- Main Content -->
     <div class="main-content">
@@ -57,7 +95,9 @@
             </select>
           </div>
         </div>
-        <div class="header-right"></div>
+        <div class="header-right">
+          <button @click="exportChat" class="header-action-btn" title="导出对话">📥</button>
+        </div>
       </header>
 
       <!-- Prompt Library Overlay -->
@@ -277,7 +317,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch, nextTick } from "vue";
-import { chat } from "./api";
+import { chat, getUserProfile, saveUserProfile, getSessions, getSessionMessages, deleteSessionApi } from "./api";
 import configData from "./components/claudecode.json";
 import promptData from "./assets/prompts.json";
 import { marked } from "marked";
@@ -287,14 +327,31 @@ import "highlight.js/styles/github.css"; // 引入代码高亮样式
 // 配置 marked
 marked.setOptions({
   highlight: function(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value;
-    }
-    return hljs.highlightAuto(code).value;
+    const language = (lang && hljs.getLanguage(lang)) ? lang : 'plaintext';
+    const highlightedCode = hljs.highlight(code, { language }).value;
+    // 使用更显眼的容器和绝对定位修复显示问题
+    return `<div class="code-block-wrapper" style="position: relative; margin: 1em 0;">
+              <button class="copy-code-btn" onclick="copyToClipboard(this)" style="position: absolute; top: 10px; right: 10px; z-index: 10; padding: 4px 8px; font-size: 12px; background: rgba(255,255,255,0.9); border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">复制</button>
+              <pre style="margin: 0;"><code class="hljs ${language}">${highlightedCode}</code></pre>
+            </div>`;
   },
   breaks: true,
   gfm: true
 });
+
+// 全局挂载复制函数
+window.copyToClipboard = function(btn) {
+  const code = btn.nextElementSibling.querySelector('code').innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    const originalText = btn.innerText;
+    btn.innerText = "已复制!";
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.innerText = originalText;
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+};
 
 function renderMarkdown(content) {
   return marked.parse(content || "");
@@ -308,8 +365,96 @@ const inputRef = ref(null);
 const isSidebarCollapsed = ref(false);
 const showConfigDetails = ref(false);
 const showPromptLibrary = ref(false);
+const showUserSettings = ref(false);
+const userProfile = ref({
+  name: "用户 1",
+  job: "开发者",
+  preference: "简洁专业"
+});
+
 const searchQuery = ref("");
 const selectedCategory = ref("全部");
+
+// 保存设置
+async function saveSettings() {
+  try {
+    const res = await saveUserProfile({
+      userId: "u1",
+      ...userProfile.value
+    });
+    if (res.data.code === 0) {
+      showUserSettings.value = false;
+      alert("设置已成功同步到数据库！");
+    }
+  } catch (err) {
+    alert("保存失败：" + err.message);
+  }
+}
+
+async function loadProfile() {
+  try {
+    const res = await getUserProfile("u1");
+    if (res.data.code === 0 && res.data.data) {
+      userProfile.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("加载画像失败:", err);
+  }
+}
+
+async function loadSessions() {
+  try {
+    const res = await getSessions("u1");
+    if (res.data.code === 0) {
+      sessions.value = res.data.data;
+      if (sessions.value.length > 0) {
+        currentSessionId.value = sessions.value[0].id;
+        await loadMessages(currentSessionId.value);
+      } else {
+        createNewSession();
+      }
+    }
+  } catch (err) {
+    console.error("加载会话失败:", err);
+  }
+}
+
+async function loadMessages(sessionId) {
+  try {
+    const res = await getSessionMessages(sessionId);
+    if (res.data.code === 0) {
+      const session = sessions.value.find(s => s.id === sessionId);
+      if (session) {
+        session.history = res.data.data;
+      }
+    }
+  } catch (err) {
+    console.error("加载消息失败:", err);
+  }
+}
+
+// 导出对话
+function exportChat() {
+  const session = sessions.value.find(s => s.id === currentSessionId.value);
+  if (!session || session.history.length === 0) {
+    alert("当前对话为空，无法导出。");
+    return;
+  }
+  
+  let md = `# ${session.title}\n\n`;
+  session.history.forEach(m => {
+    const role = m.role === 'user' ? '👤 您' : '🤖 AI';
+    md += `### ${role}\n${m.content}\n\n---\n\n`;
+  });
+  
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${session.title}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // Prompt Library
 const categories = computed(() => {
@@ -416,19 +561,30 @@ function createNewSession() {
 function switchSession(id) {
   currentSessionId.value = id;
   error.value = "";
-  scrollToBottom();
-  nextTick(() => inputRef.value?.focus());
+  loadMessages(id).then(() => {
+    scrollToBottom();
+    nextTick(() => inputRef.value?.focus());
+  });
 }
 
-function deleteSession(id) {
-  const index = sessions.value.findIndex(s => s.id === id);
-  if (index !== -1) {
-    sessions.value.splice(index, 1);
-    if (sessions.value.length === 0) {
-      createNewSession();
-    } else if (currentSessionId.value === id) {
-      currentSessionId.value = sessions.value[0].id;
+async function deleteSession(id) {
+  if (!confirm("确定要删除此对话吗？")) return;
+  try {
+    const res = await deleteSessionApi(id);
+    if (res.data.code === 0) {
+      const index = sessions.value.findIndex(s => s.id === id);
+      if (index !== -1) {
+        sessions.value.splice(index, 1);
+        if (sessions.value.length === 0) {
+          createNewSession();
+        } else if (currentSessionId.value === id) {
+          currentSessionId.value = sessions.value[0].id;
+          loadMessages(currentSessionId.value);
+        }
+      }
     }
+  } catch (err) {
+    alert("删除失败");
   }
 }
 
@@ -488,7 +644,8 @@ async function handleSend() {
       sessionId: currentSessionId.value,
       message: content,
       provider: selectedProvider.value,
-      model: selectedModel.value
+      model: selectedModel.value,
+      userProfile: userProfile.value // 传入用户画像
     });
 
     if (res.data.code === 0) {
@@ -515,6 +672,8 @@ async function handleSend() {
 
 onMounted(() => {
   inputRef.value?.focus();
+  loadProfile();
+  loadSessions();
 });
 </script>
 
@@ -785,16 +944,122 @@ onMounted(() => {
   color: #1a1a1a;
   max-width: none; /* 移除宽度限制，允许完全显示 */
   white-space: nowrap;
-}
+}.header-right {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
 
-.header-right {
-  flex: 1; /* 左右等宽 */
-  display: flex;
-  justify-content: flex-end;
-}
+  .header-action-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
 
-/* Floating Panel */
-.floating-config-panel {
+  .header-action-btn:hover {
+    background: #f0f0f0;
+  }
+
+  /* Settings Styles */
+  .settings-modal {
+    max-width: 450px !important;
+  }
+
+  .settings-group {
+    margin-bottom: 20px;
+  }
+
+  .settings-group label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #4a5568;
+  }
+
+  .settings-group input, .settings-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+  }
+
+  .settings-group input:focus {
+    border-color: #10a37f;
+  }
+
+  .settings-info {
+    font-size: 0.85rem;
+    color: #718096;
+    background: #f7fafc;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+  }
+
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .save-btn {
+    background: #10a37f;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .save-btn:hover {
+    background: #0d8a6b;
+  }
+
+  /* Code Block Styles */
+  .code-block-wrapper {
+    position: relative;
+    margin: 16px 0;
+  }
+
+  .copy-code-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    z-index: 5;
+    transition: all 0.2s;
+  }
+
+  .copy-code-btn:hover {
+    background: white;
+    border-color: #10a37f;
+    color: #10a37f;
+  }
+
+  .copy-code-btn.copied {
+    background: #10a37f;
+    color: white;
+    border-color: #10a37f;
+  }
+
+  /* Floating Panel */
+  .floating-config-panel {
   position: absolute;
   top: 70px;
   left: 20px;
