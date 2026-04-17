@@ -1,0 +1,215 @@
+{
+  "LOG": false,
+  "LOG_LEVEL": "debug",
+  "CLAUDE_PATH": "",
+  "HOST": "127.0.0.1",
+  "PORT": 3456,
+  "APIKEY": "sk-zcf-x-ccr",
+  "API_TIMEOUT_MS": "600000",
+  "PROXY_URL": "",
+  "transformers": [],
+  "Providers": [
+    {
+      "name": "modelscope",
+      "api_base_url": "https://api-inference.modelscope.cn/v1/chat/completions",
+      "api_key": "ms-bc97c95d-d040-494e-94a8-e1c415fefcdf",
+      "models": [
+        "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        "Qwen/Qwen3-235B-A22B-Thinking-2507",
+        "ZhipuAI/GLM-4.5"
+      ],
+      "transformer": {
+        "use": [
+          [
+            "maxtoken",
+            {
+              "max_tokens": 65536
+            }
+          ]
+        ],
+        "Qwen/Qwen3-Coder-480B-A35B-Instruct": {
+          "use": [
+            "enhancetool"
+          ]
+        },
+        "Qwen/Qwen3-235B-A22B-Thinking-2507": {
+          "use": [
+            "reasoning"
+          ]
+        }
+      }
+    },
+    {
+      "name": "openrouter",
+      "api_base_url": "https://openrouter.ai/api/v1/chat/completions",
+      "api_key": "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",
+      "models": [
+        "google/gemini-2.5-pro-preview",
+        "anthropic/claude-sonnet-4",
+        "anthropic/claude-3.5-sonnet",
+        "anthropic/claude-3.7-sonnet:thinking"
+      ],
+      "transformer": {
+        "use": [
+          "openrouter",
+          "openrouter",
+          "openrouter"
+        ],
+        "anthropic/claude-3.7-sonnet:thinking": {
+          "use": [
+            "OpenAI",
+            "openrouter"
+          ]
+        }
+      }
+    },
+    {
+      "name": "dashscope",
+      "api_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      "api_key": "sk-1723d63c8020479ebff6db95d767ee9a",
+      "models": [
+        "qwen3-coder-plus"
+      ],
+      "transformer": {
+        "use": [
+          [
+            "maxtoken",
+            {
+              "max_tokens": 65536
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "MiniMax",
+      "api_base_url": "https://api.minimaxi.com/anthropic",
+      "api_key": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiLpmYjlv5fmmI4iLCJVc2VyTmFtZSI6IumZiOW_l-aYjiIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxOTgzNzkwOTA0NTE0NzE1NjU0IiwiUGhvbmUiOiIxMzQxNTA4NDQ0NCIsIkdyb3VwSUQiOiIxOTgzNzkwOTA0NTA2MzI3MDQ2IiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjUtMTAtMzAgMTU6MTY6NTAiLCJUb2tlblR5cGUiOjEsImlzcyI6Im1pbmltYXgifQ.lxjgBxeTyina3xW74Gl-N7_e-UlAdZm-7XmnCGjNuUD5gB0-00KmFGF-rXxQIfQsFQCiBKEodK0v3P0tZTfzTZwAgttL6Q-eDOyRAMXNDxqQCGe8RZXcm5T7DRY8jVlXVKggRMtBNZeYQRLCHlCwJFQ_mdSgagWCqtrcnGt4fhX_sgqeBao4DAvguR6uKgI6XR7k_RMajCf_MuhZezVlmZKESt0B235rmvR7xuGqz8n7qYPutY-Nvu5sKLWqOsnDLxlEdpcREWDFTRoaIHsEsjJzqD07BCFepatI3qZ4rNPNtmr12VpZ2pE3nPx14XHKk7eDkvLFZHYgJeQGPBfRVA",
+      "models": []
+    },
+    {
+      "name": "qingyuntop",
+      "api_base_url": "https://api.qingyuntop.top",
+      "api_key": "sk-2jmy7Eg0vCh3XIHr3D1v710VP23l4Ct4dlaAEpM9BbkNFpYl",
+      "models": []
+    },
+    {
+      "name": "智谱",
+      "api_base_url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      "api_key": "f67e360e502c447e8472867f82fe4dcd.4iCamWcKfLjpkXLP",
+      "models": [
+        "glm-4.6",
+        "glm-4.5-air"
+      ]
+    },
+    {
+      "name": "gemini",
+      "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
+      "api_key": "AIzaSyDy6ylUMsvKM4SegXww-0MhWkA5rEuChTQ",
+      "models": [
+        "gemini-2.5-flash",
+        "gemini-2.5-pro"
+      ],
+      "transformer": {
+        "use": [
+          "gemini"
+        ]
+      }
+    },
+    {
+      "name": "siliconflow",
+      "api_base_url": "https://api.siliconflow.cn/v1/chat/completions",
+      "api_key": "sk-enbrbdrnyygexcchfasbbxqntyygjwasxicvbmlacgswsyrn",
+      "models": [
+        "moonshotai/Kimi-K2-Instruct"
+      ],
+      "transformer": {
+        "use": [
+          [
+            "maxtoken",
+            {
+              "max_tokens": 16384
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "iflow",
+      "api_base_url": "https://apis.iflow.cn/v1/chat/completions",
+      "api_key": "sk-ba111de997ee5e21a6fb7c52326fdf79",
+      "models": [
+        "qwen3-coder-plus",
+        "kimi-k2-0905",
+        "glm-4.5",
+        "glm-4.6",
+        "qwen3-max",
+        "deepseek-v3.1",
+        "qwen3-vl-plus"
+      ],
+      "transformer": {
+        "deepseek-v3.1": {
+          "use": [
+            [
+              "maxtoken",
+              {
+                "max_tokens": 8192
+              }
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "burncloud",
+      "api_base_url": "https://ai.burncloud.com/v1/chat/completions",
+      "api_key": "sk-8YCDsFkU5AyeJj1S7cEgSbtB0vcY0AYwGSJRXlJTDYqh467u",
+      "models": [
+        "claude-sonnet-4-20250514",
+        "claude-3-7-sonnet-20250219",
+        "claude-opus-4-1-20250805",
+        "claude-3-5-sonnet-20241022",
+        "claude-opus-4-20250514",
+        "gpt-4.1",
+        "gpt-image-1",
+        "gpt-4o",
+        "gpt-5",
+        "gpt-4o-mini",
+        "gpt-4.1-mini",
+        "chatgpt-4o-latest",
+        "gpt-4o-2024-11-20",
+        "gpt-5-chat-latest",
+        "text-embedding-3-large",
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-nothink",
+        "gemini-2.5-pro-search",
+        "gemini-2.5-pro-preview-05-06",
+        "gemini-2.5-pro-preview-06-05",
+        "o3",
+        "o3-mini",
+        "DeepSeek-V3"
+      ]
+    }
+  ],
+  "StatusLine": {
+    "enabled": false,
+    "currentStyle": "default",
+    "default": {
+      "modules": []
+    },
+    "powerline": {
+      "modules": []
+    }
+  },
+  "Router": {
+    "default": "modelscope,Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    "background": "modelscope,Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    "think": "modelscope,Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    "longContext": "modelscope,Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    "longContextThreshold": 60000,
+    "webSearch": "modelscope,Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    "image": "modelscope,Qwen/Qwen3-Coder-480B-A35B-Instruct"
+  },
+  "CUSTOM_ROUTER_PATH": ""
+}
