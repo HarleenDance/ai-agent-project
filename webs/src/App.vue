@@ -218,6 +218,7 @@
         <div class="input-container-outer">
           <div class="input-container-inner">
             <button class="attach-btn" @click="showPromptLibrary = !showPromptLibrary" title="提示词库">💡</button>
+            <button class="attach-btn" @click="openCommunityPrompts" title="社区提示词 (外部)">🌐</button>
             <button class="attach-btn" @click="showConfigDetails = !showConfigDetails" title="查看配置详情">⚙️</button>
             <textarea
               v-model="message"
@@ -297,6 +298,10 @@ const filteredPrompts = computed(() => {
   });
 });
 
+function openCommunityPrompts() {
+  window.open("https://www.aishort.top/community-prompts", "_blank");
+}
+
 function usePrompt(content) {
   console.log("Using prompt content:", content); // 添加日志确认内容
   message.value = content;
@@ -305,6 +310,8 @@ function usePrompt(content) {
   // 使用 setTimeout 确保在 Vue 数据同步和 DOM 更新后执行
   setTimeout(() => {
     if (inputRef.value) {
+      // 鲁棒性增强：直接操作 DOM 赋值，确保 v-model 没来得及同步时也能显示
+      inputRef.value.value = content; 
       adjustTextareaHeight();
       inputRef.value.focus();
       // 兼容性更好的滚动方式
@@ -313,6 +320,13 @@ function usePrompt(content) {
     }
   }, 50);
 }
+
+// 监听 message 变化，自动调整高度
+watch(message, () => {
+  nextTick(() => {
+    adjustTextareaHeight();
+  });
+});
 
 // Session Management
 const sessions = ref([
