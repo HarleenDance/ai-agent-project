@@ -25,8 +25,11 @@
       </div>
       <div class="sidebar-footer">
         <div class="user-profile-mini">
-          <div class="avatar-circle">U</div>
-          <span>用户 1</span>
+          <div class="user-info-left">
+            <div class="avatar-circle">U</div>
+            <span>用户 1</span>
+          </div>
+          <button @click="openWaimaoTools" class="tools-btn" title="外贸工具集合">🛠️</button>
         </div>
       </div>
     </aside>
@@ -36,22 +39,22 @@
       <header class="app-header">
         <div class="header-left">
           <button v-if="isSidebarCollapsed" @click="isSidebarCollapsed = false" class="mobile-menu-btn">☰</button>
-          <div class="model-badge">
-            <span class="provider-name">{{ selectedProvider || 'OpenAI' }}</span>
-            <span class="divider">/</span>
-            <span class="model-name">{{ selectedModel }}</span>
-          </div>
+          <div class="header-title">AI Agent</div>
         </div>
         
-        <div class="model-selector-inline">
-          <select v-model="selectedProvider" class="minimal-select">
-            <option value="">默认 (OpenAI)</option>
-            <option v-for="p in providers" :key="p.name" :value="p.name">{{ p.name }}</option>
-          </select>
-          <select v-model="selectedModel" class="minimal-select">
-            <option v-for="m in availableModels" :key="m" :value="m">{{ m }}</option>
-          </select>
+        <div class="model-selector-container">
+          <div class="custom-selector">
+            <select v-model="selectedProvider" class="minimal-select provider-select">
+              <option value="">默认 (OpenAI)</option>
+              <option v-for="p in providers" :key="p.name" :value="p.name">{{ p.name }}</option>
+            </select>
+            <span class="selector-divider">/</span>
+            <select v-model="selectedModel" class="minimal-select model-select">
+              <option v-for="m in availableModels" :key="m" :value="m">{{ m }}</option>
+            </select>
+          </div>
         </div>
+        <div class="header-right"></div>
       </header>
 
       <!-- Prompt Library Overlay -->
@@ -149,45 +152,53 @@
         <div class="messages-wrapper">
           <div v-for="(item, index) in currentHistory" :key="index" :class="['message-row', item.role]">
             <div class="message-container">
-              <div class="avatar-box">
-                <div v-if="item.role === 'user'" class="avatar user">U</div>
-                <div v-else class="avatar assistant">🤖</div>
+              <!-- AI Avatar (Left) -->
+              <div v-if="item.role === 'assistant'" class="avatar-box">
+                <div class="avatar assistant">🤖</div>
               </div>
-              <div class="message-content">
+              
+              <div class="message-content-wrapper">
                 <div class="role-label">{{ item.role === 'user' ? '您' : 'AI 助手' }}</div>
-                <div class="text-body">
-                  <p v-if="item.role === 'user'">{{ item.content }}</p>
-                  <div v-else>
-                    <!-- Thought Process (Intermediate Steps) -->
-                    <div v-if="item.thoughts && item.thoughts.length > 0" class="thought-container">
-                      <details>
-                        <summary class="thought-summary">
-                          <span class="thought-icon">🧠</span> 思考过程
-                        </summary>
-                        <div class="thought-steps">
-                          <div v-for="(step, sIdx) in item.thoughts" :key="sIdx" class="thought-step">
-                            <div class="step-header">调用工具: <code>{{ step.tool }}</code></div>
-                            <div class="step-io">
-                              <div class="io-box"><b>输入:</b> <code>{{ step.input }}</code></div>
-                              <div class="io-box"><b>输出:</b> <pre>{{ step.output }}</pre></div>
+                <div class="message-content">
+                  <div class="text-body">
+                    <p v-if="item.role === 'user'">{{ item.content }}</p>
+                    <div v-else>
+                      <!-- Thought Process (Intermediate Steps) -->
+                      <div v-if="item.thoughts && item.thoughts.length > 0" class="thought-container">
+                        <details>
+                          <summary class="thought-summary">
+                            <span class="thought-icon">🧠</span> 思考过程
+                          </summary>
+                          <div class="thought-steps">
+                            <div v-for="(step, sIdx) in item.thoughts" :key="sIdx" class="thought-step">
+                              <div class="step-header">调用工具: <code>{{ step.tool }}</code></div>
+                              <div class="step-io">
+                                <div class="io-box"><b>输入:</b> <code>{{ step.input }}</code></div>
+                                <div class="io-box"><b>输出:</b> <pre>{{ step.output }}</pre></div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </details>
-                    </div>
+                        </details>
+                      </div>
 
-                    <div v-if="item.intent && item.intent !== 'agent_auto'" class="tag-row">
-                      <span class="intent-tag">{{ item.intent }}</span>
-                    </div>
-                    <div class="markdown-content" v-html="renderMarkdown(item.content)"></div>
-                    <div v-if="item.toolResult && item.toolResult !== '自动执行工具'" class="tool-expansion">
-                      <details>
-                        <summary>工具调用详情</summary>
-                        <pre>{{ item.toolResult }}</pre>
-                      </details>
+                      <div v-if="item.intent && item.intent !== 'agent_auto'" class="tag-row">
+                        <span class="intent-tag">{{ item.intent }}</span>
+                      </div>
+                      <div class="markdown-content" v-html="renderMarkdown(item.content)"></div>
+                      <div v-if="item.toolResult && item.toolResult !== '自动执行工具'" class="tool-expansion">
+                        <details>
+                          <summary>工具调用详情</summary>
+                          <pre>{{ item.toolResult }}</pre>
+                        </details>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <!-- User Avatar (Right) -->
+              <div v-if="item.role === 'user'" class="avatar-box">
+                <div class="avatar user">U</div>
               </div>
             </div>
           </div>
@@ -300,6 +311,12 @@ const filteredPrompts = computed(() => {
 
 function openCommunityPrompts() {
   window.open("https://www.aishort.top/community-prompts", "_blank");
+}
+
+function openWaimaoTools() {
+  if (confirm("是否打开外贸百科工具集合网站？")) {
+    window.open("https://waimao21.com/", "_blank");
+  }
 }
 
 function usePrompt(content) {
@@ -609,10 +626,33 @@ onMounted(() => {
 .user-profile-mini {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   padding: 8px;
   border-radius: 8px;
   cursor: pointer;
+}
+
+.user-info-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tools-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tools-btn:hover {
+  background-color: #ddd;
 }
 
 .user-profile-mini:hover {
@@ -647,61 +687,82 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #f0f0f0;
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
 .header-left {
+  flex: 1; /* 左右等宽，确保中间选择器真正居中 */
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
-.mobile-menu-btn {
-  font-size: 1.2rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
+.header-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
 }
 
-.model-badge {
+.model-selector-container {
+  flex: 0 1 auto; /* 允许收缩但不强行占据所有空间 */
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  margin: 0 8px; /* 缩小边距，为中间腾出更多空间 */
+}
+
+.custom-selector {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: #f4f4f4;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #666;
+  background: #f4f4f5;
+  padding: 4px 16px;
+  border-radius: 12px;
+  border: 1px solid #eef0f2;
+  transition: all 0.2s;
+  max-width: 100%;
+  width: fit-content; /* 确保气泡宽度跟随内容 */
 }
 
-.model-name {
-  color: #0d0d0d;
+.custom-selector:hover {
+  background: #ebebeb;
+  border-color: #e0e0e0;
 }
 
-.model-selector-inline {
-  display: flex;
-  gap: 8px;
+.selector-divider {
+  margin: 0 6px;
+  color: #a0a0a0;
+  font-weight: 300;
 }
 
 .minimal-select {
   border: none;
   background: transparent;
   font-size: 0.85rem;
-  color: #666;
+  font-weight: 600;
+  color: #555;
   cursor: pointer;
   outline: none;
   padding: 4px;
+  flex-shrink: 0; /* 禁止选择器自己收缩，优先保证文字完整 */
 }
 
-.minimal-select:hover {
-  color: #0d0d0d;
+.model-select {
+  color: #1a1a1a;
+  max-width: none; /* 移除宽度限制，允许完全显示 */
+  white-space: nowrap;
+}
+
+.header-right {
+  flex: 1; /* 左右等宽 */
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Floating Panel */
@@ -754,6 +815,7 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   scroll-behavior: smooth;
+  background-color: #f5f5f5; /* 微信聊天背景色 */
 }
 
 .welcome-container {
@@ -766,6 +828,7 @@ onMounted(() => {
   margin: 0 auto;
   padding: 40px 20px;
   text-align: center;
+  background-color: transparent;
 }
 
 .welcome-logo {
@@ -822,68 +885,121 @@ onMounted(() => {
 }
 
 .messages-wrapper {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 20px 0 100px;
+  padding: 20px 10px 120px;
 }
 
 .message-row {
-  padding: 24px 20px;
+  padding: 12px 20px;
   width: 100%;
+  display: flex;
+}
+
+.message-row.user {
+  justify-content: flex-end;
 }
 
 .message-row.assistant {
-  background-color: transparent;
+  justify-content: flex-start;
 }
 
 .message-container {
   display: flex;
-  gap: 20px;
-  max-width: 800px;
-  margin: 0 auto;
+  gap: 12px;
+  max-width: 85%; /* 微信风格通常较宽 */
+  align-items: flex-start;
 }
 
-.avatar-box {
-  flex-shrink: 0;
+.message-row.user .message-container {
+  flex-direction: row;
+}
+
+.message-content-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.message-row.user .message-content-wrapper {
+  align-items: flex-end;
+}
+
+.message-row.assistant .message-content-wrapper {
+  align-items: flex-start;
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px; /* 微信风格是小方块圆角 */
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
+  box-shadow: none;
 }
 
 .avatar.user {
-  background-color: #ececec;
-  color: #0d0d0d;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.avatar.assistant {
-  background-color: #10a37f;
-  color: white;
+  background-color: #f3f3f3;
 }
 
 .message-content {
-  flex: 1;
-  min-width: 0;
+  position: relative;
+  margin-top: 4px;
 }
 
 .role-label {
-  font-weight: 600;
-  font-size: 0.9rem;
-  margin-bottom: 8px;
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: #999;
+  margin-bottom: 4px;
 }
 
 .text-body {
   font-size: 1rem;
-  line-height: 1.6;
-  color: #374151;
+  line-height: 1.5;
+  padding: 10px 14px;
+  border-radius: 6px;
+  word-break: break-all;
+}
+
+.text-body p {
+  margin: 0; /* 移除段落默认边距，防止气泡撑得太大 */
+}
+
+.message-row.user .text-body {
+  background: #95ec69; /* 微信绿 */
+  color: #000;
+  border: 1px solid #81d45c;
+  margin-right: 8px; /* 留出空间给小尖角 */
+}
+
+.message-row.assistant .text-body {
+  background: #ffffff;
+  color: #000;
+  border: 1px solid #ebebeb;
+  margin-left: 8px; /* 留出空间给小尖角 */
+}
+
+/* 气泡小尖角模拟 */
+.message-row.user .text-body::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  top: 12px;
+  border-left: 8px solid #95ec69;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+.message-row.assistant .text-body::after {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 12px;
+  border-right: 8px solid #ffffff;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
 }
 
 .tag-row {
@@ -1044,11 +1160,17 @@ onMounted(() => {
 .input-container-inner {
   background: white;
   border: 1px solid #e5e5e5;
-  border-radius: 16px;
+  border-radius: 20px;
   display: flex;
   align-items: flex-end;
-  padding: 8px 12px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.05);
+  padding: 10px 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  transition: all 0.2s ease;
+}
+
+.input-container-inner:focus-within {
+  border-color: #10a37f;
+  box-shadow: 0 4px 24px rgba(16, 163, 127, 0.12);
 }
 
 .attach-btn {
