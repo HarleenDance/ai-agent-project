@@ -298,10 +298,20 @@ const filteredPrompts = computed(() => {
 });
 
 function usePrompt(content) {
+  console.log("Using prompt content:", content); // 添加日志确认内容
   message.value = content;
   showPromptLibrary.value = false;
-  adjustTextareaHeight();
-  nextTick(() => inputRef.value?.focus());
+  
+  // 使用 setTimeout 确保在 Vue 数据同步和 DOM 更新后执行
+  setTimeout(() => {
+    if (inputRef.value) {
+      adjustTextareaHeight();
+      inputRef.value.focus();
+      // 兼容性更好的滚动方式
+      inputRef.value.setSelectionRange(content.length, content.length);
+      inputRef.value.scrollTop = 0; 
+    }
+  }, 50);
 }
 
 // Session Management
@@ -1051,6 +1061,8 @@ textarea {
   line-height: 1.5;
   max-height: 200px;
   background: transparent;
+  color: #000000; /* 强制黑色文字，防止主题干扰 */
+  min-height: 24px;
 }
 
 .send-icon-btn {
