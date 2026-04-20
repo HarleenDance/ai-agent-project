@@ -78,5 +78,36 @@ export const knowledgeTool = new DynamicStructuredTool({
   },
 });
 
+/**
+ * 互联网搜索工具 (插件)
+ */
+export const searchInternetTool = new DynamicStructuredTool({
+  name: "search_internet",
+  description: "在互联网上搜索最新信息、新闻、技术趋势等",
+  schema: z.object({
+    query: z.string().describe("搜索关键词"),
+  }),
+  func: async ({ query }) => {
+    // 这里模拟一个搜索结果，实际应用中可以接入 Google Search 或 DuckDuckGo API
+    console.log(`[Plugin] 正在搜索互联网: ${query}`);
+    return `关于 "${query}" 的搜索结果：\n1. 2026年最新进展显示，该技术已进入商用阶段。\n2. 社区普遍认为其性能提升了 40%。\n3. 相关开源项目已在 GitHub 获得超过 10k stars。`;
+  },
+});
+
+/**
+ * 维基百科工具 (插件)
+ */
+export const wikipediaTool = new DynamicStructuredTool({
+  name: "search_wikipedia",
+  description: "在维基百科中查找详细的百科定义、历史背景、人物传记等",
+  schema: z.object({
+    topic: z.string().describe("要查询的主题名称"),
+  }),
+  func: async ({ topic }) => {
+    console.log(`[Plugin] 正在查询维基百科: ${topic}`);
+    return `[维基百科 - ${topic}]: 这是关于 ${topic} 的详细百科条目内容。${topic} 是一个具有重要历史意义的概念，起源于... 发展于... 目前被广泛应用于...`;
+  },
+});
+
 // 导出所有工具列表
-export const tools = [weatherTool, timeTool, knowledgeTool];
+export const tools = [weatherTool, timeTool, knowledgeTool, searchInternetTool, wikipediaTool];

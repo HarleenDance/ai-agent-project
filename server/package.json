@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "db:setup": "node db/setup.js",
+    "test": "echo \"Error: no test msg\" && exit 1"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "langchain": "^0.2.0",
+    "mysql2": "^3.22.1",
+    "sequelize": "^6.37.8",
     "zod": "^4.3.6"
   },
   "volta": {

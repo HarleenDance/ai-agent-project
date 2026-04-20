@@ -60,9 +60,10 @@ export async function runAgent({ userId, sessionId = "default", message, provide
     ["system", `你是一个全能的 AI 助手。
 请遵循以下规则：
 1. 优先用中文回答。
-2. 你可以调用工具来获取天气、时间或检索内部知识库。
-3. 如果用户表达了明确的偏好（如语言、风格），请在回答中体现。
-4. 当前用户画像信息：{user_profile}
+2. 你可以调用工具来获取天气、时间、检索内部知识库、进行互联网搜索或查询维基百科。
+3. 如果用户无法通过内部知识库回答，请尝试使用互联网搜索工具获取最新信息。
+4. 如果用户询问学术性、历史性或定义性概念，请优先使用维基百科工具。
+5. 当前用户画像信息：{user_profile}
 `],
     new MessagesPlaceholder("chat_history"),
     ["human", "{input}"],
