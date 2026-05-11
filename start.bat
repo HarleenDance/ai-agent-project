@@ -1,44 +1,92 @@
 @echo off
-title AI Agent 启动脚本
+title AI Agent Launcher
 
-echo ==========================================
-echo    AI Agent 系统正在启动...
-echo ==========================================
+cd /d "%~dp0"
 
-:: 1. 启动后端服务器
-echo [1/2] 正在准备后端服务 (Port: 3000)...
-pushd server
+echo.
+echo  ==========================================
+echo       AI Agent - One Click Start
+echo  ==========================================
+echo.
+echo  Project Dir: %cd%
+echo.
 
-:: 检查 node_modules
-if not exist "node_modules\" (
-    echo 正在安装后端依赖...
-    call npm install
+:: Check Node.js
+where node >nul 2>&1
+if %errorlevel% neq 0 (
+    echo  [ERROR] Node.js not found!
+    echo  Download: https://nodejs.org/
+    pause
+    exit /b 1
+)
+echo  [OK] Node.js:
+node -v
+echo.
+
+:: Check project structure
+if not exist "server\package.json" (
+    echo  [ERROR] server\package.json not found!
+    pause
+    exit /b 1
+)
+if not exist "webs\package.json" (
+    echo  [ERROR] webs\package.json not found!
+    pause
+    exit /b 1
 )
 
-:: 在新窗口启动后端
-start "AI-Agent-Backend" cmd /k "npm start"
-popd
-echo 后端启动指令已发出。
-
-:: 2. 启动前端页面
-echo [2/2] 正在准备前端页面 (Vite)...
-pushd webs
-
-:: 检查 node_modules
-if not exist "node_modules\" (
-    echo 正在安装前端依赖...
+:: Install backend deps
+echo  [1/4] Check backend deps...
+if not exist "server\node_modules\" (
+    echo        Installing backend deps...
+    pushd server
     call npm install
+    popd
+    echo        Done.
+) else (
+    echo        Already installed, skip.
 )
+echo.
 
-:: 在新窗口启动前端
-start "AI-Agent-Frontend" cmd /k "npm run dev"
-popd
-echo 前端启动指令已发出。
+:: Install frontend deps
+echo  [2/4] Check frontend deps...
+if not exist "webs\node_modules\" (
+    echo        Installing frontend deps...
+    pushd webs
+    call npm install
+    popd
+    echo        Done.
+) else (
+    echo        Already installed, skip.
+)
+echo.
 
-echo ==========================================
-echo    系统启动指令已全量发出！
-echo    - 后端地址: http://localhost:3000
-echo    - 前端地址: http://localhost:5173 (通常)
-echo ==========================================
-echo 请检查弹出的两个新窗口查看运行日志。
+:: Start backend
+echo  [3/4] Starting backend (Port 3000)...
+start "AI-Agent-Backend" cmd /k "cd /d "%~dp0server" && node app.js"
+echo        Backend window opened.
+echo.
+
+timeout /t 3 /nobreak >nul
+
+:: Start frontend
+echo  [4/4] Starting frontend (Vite)...
+start "AI-Agent-Frontend" cmd /k "cd /d "%~dp0webs" && npm run dev"
+echo        Frontend window opened.
+echo.
+
+echo  ==========================================
+echo       All services started!
+echo  ==========================================
+echo.
+echo     Backend:  http://localhost:3000
+echo     Frontend: http://localhost:5173
+echo.
+echo  Check the two new windows for logs:
+echo    - AI-Agent-Backend
+echo    - AI-Agent-Frontend
+echo.
+echo  Close those windows to stop services.
+echo  ==========================================
+echo.
 pause

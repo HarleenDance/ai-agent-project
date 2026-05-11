@@ -502,7 +502,11 @@ async function loadSessions() {
   try {
     const res = await getSessions("u1");
     if (res.data.code === 0) {
-      sessions.value = res.data.data;
+      const dbSessions = (res.data.data || []).map(s => ({
+        ...s,
+        history: []
+      }));
+      sessions.value = dbSessions;
       if (sessions.value.length > 0) {
         currentSessionId.value = sessions.value[0].id;
         await loadMessages(currentSessionId.value);
@@ -512,6 +516,9 @@ async function loadSessions() {
     }
   } catch (err) {
     console.error("加载会话失败:", err);
+    if (sessions.value.length === 0) {
+      createNewSession();
+    }
   }
 }
 
@@ -521,18 +528,28 @@ async function loadMessages(sessionId) {
     if (res.data.code === 0) {
       const session = sessions.value.find(s => s.id === sessionId);
       if (session) {
-        session.history = res.data.data;
+        session.history = (res.data.data || []).map(m => ({
+          role: m.role,
+          content: m.content,
+          thoughts: m.thoughts || [],
+          toolResult: m.toolResult
+        }));
       }
     }
   } catch (err) {
     console.error("加载消息失败:", err);
+    // 确保 history 始终是数组
+    const session = sessions.value.find(s => s.id === sessionId);
+    if (session && !Array.isArray(session.history)) {
+      session.history = [];
+    }
   }
 }
 
 // 导出对话
 function exportChat() {
   const session = sessions.value.find(s => s.id === currentSessionId.value);
-  if (!session || session.history.length === 0) {
+  if (!session || !session.history || session.history.length === 0) {
     alert("当前对话为空，无法导出。");
     return;
   }
@@ -617,7 +634,7 @@ const currentSessionId = ref('default');
 
 const currentHistory = computed(() => {
   const session = sessions.value.find(s => s.id === currentSessionId.value);
-  return session ? session.history : [];
+  return session?.history ?? [];
 });
 
 const providers = ref([]);

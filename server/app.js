@@ -147,41 +147,57 @@ app.post("/chat", async (req, res) => {
   if (!userId || !sessionId || !message) {
     return res.status(400).json({ code: 400, message: "Missing required fields (userId, sessionId, message)" });
   }
-  
+
+  let user = { name: "新用户", job: "开发者", preference: "简洁专业" };
+  let history = [];
+
   try {
-    // 1. 确保用户存在
-    let user = await User.findByPk(userId);
-    if (!user) {
-      user = await User.create({ userId, name: "新用户", job: "开发者", preference: "简洁专业" });
+    // 1. 尝试从数据库获取用户（容错：DB 挂了也能聊天）
+    try {
+      let dbUser = await User.findByPk(userId);
+      if (!dbUser) {
+        dbUser = await User.create({ userId, name: "新用户", job: "开发者", preference: "简洁专业" });
+      }
+      user = dbUser;
+    } catch (dbErr) {
+      console.warn("[Chat] DB User query failed, using default profile:", dbErr.message);
     }
 
-    // 2. 确保会话存在
-    let session = await Session.findByPk(sessionId);
-    if (!session) {
-      session = await Session.create({ 
-        id: sessionId, 
-        userId, 
-        title: message.substring(0, 20) 
+    // 2. 尝试确保会话存在
+    try {
+      let session = await Session.findByPk(sessionId);
+      if (!session) {
+        session = await Session.create({ 
+          id: sessionId, 
+          userId, 
+          title: message.substring(0, 20) 
+        });
+      } else {
+        session.changed('updatedAt', true);
+        await session.save();
+      }
+    } catch (dbErr) {
+      console.warn("[Chat] DB Session operation failed:", dbErr.message);
+    }
+
+    // 3. 尝试获取历史记录
+    try {
+      const historyData = await Message.findAll({
+        where: { sessionId },
+        order: [['createdAt', 'ASC']],
+        limit: 10 
       });
-    } else {
-      session.changed('updatedAt', true);
-      await session.save();
+      history = historyData.map(h => ({ role: h.role, content: h.content }));
+    } catch (dbErr) {
+      console.warn("[Chat] DB History query failed, using empty history:", dbErr.message);
     }
 
-    // 3. 获取历史记录
-    const historyData = await Message.findAll({
-      where: { sessionId },
-      order: [['createdAt', 'ASC']],
-      limit: 10 
-    });
-    const history = historyData.map(h => ({ role: h.role, content: h.content }));
-
-    // 4. 保存用户消息
-    await Message.create({
-      sessionId,
-      role: "user",
-      content: message
-    });
+    // 4. 尝试保存用户消息
+    try {
+      await Message.create({ sessionId, role: "user", content: message });
+    } catch (dbErr) {
+      console.warn("[Chat] DB Save user message failed:", dbErr.message);
+    }
 
     // 设置响应头为 SSE
     res.setHeader('Content-Type', 'text/event-stream');
@@ -212,15 +228,19 @@ app.post("/chat", async (req, res) => {
       }
     }
 
-    // 6. 结束后保存 AI 回复到数据库
-    await Message.create({
-      sessionId,
-      role: "assistant",
-      content: fullAnswer,
-      intent: "agent_stream",
-      thoughts: finalThoughts,
-      toolResult: "流式执行完成"
-    });
+    // 6. 尝试保存 AI 回复到数据库
+    try {
+      await Message.create({
+        sessionId,
+        role: "assistant",
+        content: fullAnswer,
+        intent: "agent_stream",
+        thoughts: finalThoughts,
+        toolResult: "流式执行完成"
+      });
+    } catch (dbErr) {
+      console.warn("[Chat] DB Save assistant message failed:", dbErr.message);
+    }
 
     res.write('data: [DONE]\n\n');
     res.end();
