@@ -8,11 +8,15 @@ import { Document } from "@langchain/core/documents";
  * 天气查询工具
  */
 export const weatherTool = new DynamicStructuredTool({
+// ① name：工具名称（Agent 调用时用的标识）
   name: "get_weather",
+  // ② description：告诉 LLM 这个工具能干什么（LLM 靠这个决定要不要调用）
   description: "查询指定城市的天气情况",
+  // ③ schema：参数定义（用 zod 校验输入格式）  工具的"使用说明书"，规定要传什么参数
   schema: z.object({
     city: z.string().describe("要查询天气的城市名称"),
   }),
+  // ④ func：实际执行逻辑（真正干活的代码）工具的"干活逻辑"
   func: async ({ city }) => {
     // 模拟天气数据
     return `${city}今天晴天，25°C，适合出行。`;
@@ -70,11 +74,15 @@ export const knowledgeTool = new DynamicStructuredTool({
     query: z.string().describe("搜索关键词或问题"),
   }),
   func: async ({ query }) => {
+    // 拿到向量存储（Embedding 后的知识库）
     const store = await getVectorStore();
+    // 用你的问题去做 语义相似度搜索 ，返回最相关的 2 条文档
     const results = await store.similaritySearch(query, 2);
     if (results.length === 0) return "知识库中未找到相关信息。";
     
-    return results.map(doc => `[${doc.metadata.title}]: ${doc.pageContent}`).join("\n\n");
+    // 添加 RAG 标识符，方便前端识别
+    // 把检索到的文档片段 拼成文本返回给 Agent ，Agent 再把它喂给 LLM 生成最终答案
+    return `[RAG 检索结果]\n` + results.map(doc => `[${doc.metadata.title}]: ${doc.pageContent}`).join("\n\n");
   },
 });
 
@@ -109,5 +117,21 @@ export const wikipediaTool = new DynamicStructuredTool({
   },
 });
 
+/**
+ * MCP (Model Context Protocol) 模拟工具
+ */
+export const mcpTool = new DynamicStructuredTool({
+  name: "mcp_connector",
+  description: "连接到 MCP 服务器以执行复杂的文件系统操作或数据库查询",
+  schema: z.object({
+    server_url: z.string().describe("MCP 服务器地址"),
+    command: z.string().describe("要执行的指令"),
+  }),
+  func: async ({ server_url, command }) => {
+    console.log(`[MCP] 正在通过协议连接到 ${server_url}: ${command}`);
+    return `[MCP 响应]: 指令 "${command}" 已在服务器 ${server_url} 上成功执行。返回结果：状态 OK，受影响行数 1。`;
+  },
+});
+
 // 导出所有工具列表
-export const tools = [weatherTool, timeTool, knowledgeTool, searchInternetTool, wikipediaTool];
+export const tools = [weatherTool, timeTool, knowledgeTool, searchInternetTool, wikipediaTool, mcpTool];

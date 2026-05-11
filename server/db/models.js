@@ -12,7 +12,7 @@ export const User = sequelize.define("User", {
   },
   name: {
     type: DataTypes.STRING,
-    defaultValue: "用户 1",
+    defaultValue: "新用户",
   },
   job: {
     type: DataTypes.STRING,

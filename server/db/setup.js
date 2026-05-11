@@ -26,7 +26,8 @@ async function setupDatabase() {
     await connection.end();
     process.exit(0);
   } catch (error) {
-    console.error("[Setup] 初始化失败:", error.message);
+    console.error("[Setup] 初始化失败:");
+    console.error("错误详情:", error);
     process.exit(1);
   }
 }
